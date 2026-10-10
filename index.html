@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Tarefas</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <h1>Minhas Tarefas</h1>
+      <p id="date-display"></p>
+    </header>
+
+    <form id="todo-form" class="todo-input-group">
+      <input 
+        type="text" 
+        id="todo-input" 
+        placeholder="O que você precisa fazer?" 
+        autocomplete="off" 
+        required 
+      />
+      <button type="submit" id="add-btn" aria-label="Adicionar tarefa">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+    </form>
+
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">Todas</button>
+      <button class="filter-btn" data-filter="pending">Pendentes</button>
+      <button class="filter-btn" data-filter="completed">Concluídas</button>
+    </div>
+
+    <ul id="todo-list" class="todo-list"></ul>
+
+    <footer class="app-footer">
+      <span id="counter">0 tarefas restantes</span>
+      <button id="clear-completed" class="clear-btn">Limpar concluídas</button>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
