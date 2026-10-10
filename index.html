@@ -3,44 +3,442 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lista de Tarefas</title>
-  <link rel="stylesheet" href="style.css">
+  <title>SEIREITEI OPS // GOTEI 13 COMMAND SYSTEM</title>
+  <!-- Google Fonts: Space Grotesk, Geist / Inter, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header class="app-header">
-      <h1>Minhas Tarefas</h1>
-      <p id="date-display"></p>
+  <div class="layout-wrapper">
+    
+    <!-- TOP GLOBAL BAR -->
+    <header class="global-topbar">
+      <div class="topbar-brand">
+        <span class="diamond-icon">◆</span>
+        <div class="brand-text">
+          <span class="brand-title">SEIREITEI OPS <span class="kanji-sub">// 瀞霊廷</span></span>
+          <span class="brand-sub">GOTEI 13 COMMAND SYSTEM</span>
+        </div>
+      </div>
+
+      <div class="threat-alert-pill">
+        <span class="warning-triangle">▲</span>
+        <span class="threat-text">THREAT LEVEL: MENOS GRANDE DETECTED</span>
+      </div>
+
+      <div class="reiatsu-reserve-block">
+        <div class="reiatsu-label-row">
+          <span>REIATSU RESERVE</span>
+          <span class="reiatsu-pct" id="global-reiatsu-pct">84.2% [NOMINAL]</span>
+        </div>
+        <div class="segmented-bar" id="global-reiatsu-bar">
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick active"></div>
+          <div class="bar-tick"></div>
+          <div class="bar-tick"></div>
+        </div>
+      </div>
+
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="mission-search" placeholder="Buscar missão, hojo..." autocomplete="off">
+      </div>
+
+      <div class="officer-profile">
+        <div class="officer-info">
+          <span class="officer-name">Kurosaki Ichigo</span>
+          <span class="officer-rank">CAPITÃO SUBSTITUTO // DIVISÃO 0</span>
+        </div>
+        <div class="officer-avatar">
+          <div class="avatar-box">15</div>
+        </div>
+      </div>
     </header>
 
-    <form id="todo-form" class="todo-input-group">
-      <input 
-        type="text" 
-        id="todo-input" 
-        placeholder="O que você precisa fazer?" 
-        autocomplete="off" 
-        required 
-      />
-      <button type="submit" id="add-btn" aria-label="Adicionar tarefa">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      </button>
-    </form>
+    <div class="main-body-container">
+      
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar">
+        <div class="nav-section-title">MISSÕES DO ESQUADRÃO</div>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-filter="mundo-dos-vivos">
+            <span class="nav-icon">🌐</span>
+            <span class="nav-label">MUNDO DOS VIVOS</span>
+            <span class="nav-badge" id="badge-mundo-vivos">12</span>
+          </button>
+          <button class="nav-item" data-filter="purificacao">
+            <span class="nav-icon">⚔️</span>
+            <span class="nav-label">PURIFICAÇÃO DE HOLLOWS</span>
+            <span class="nav-badge orange" id="badge-hollows">5</span>
+          </button>
+          <button class="nav-item" data-filter="almas-salvas">
+            <span class="nav-icon">✦</span>
+            <span class="nav-label">ALMAS SALVAS</span>
+            <span class="nav-badge dark" id="badge-almas">48</span>
+          </button>
+          <button class="nav-item" data-filter="nivel-capitao">
+            <span class="nav-icon">⚡</span>
+            <span class="nav-label">NÍVEL CAPITÃO</span>
+            <span class="nav-badge red" id="badge-capitao">3</span>
+          </button>
+        </nav>
 
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all">Todas</button>
-      <button class="filter-btn" data-filter="pending">Pendentes</button>
-      <button class="filter-btn" data-filter="completed">Concluídas</button>
+        <div class="nav-section-title">DIVISÕES & SETORES</div>
+        <nav class="sidebar-nav division-nav">
+          <button class="nav-item sub-div" data-division="1">
+            <span class="div-glyph">🛡️</span>
+            <span class="nav-label">1ª DIVISÃO - CENTRAL</span>
+          </button>
+          <button class="nav-item sub-div" data-division="11">
+            <span class="div-glyph">⚔️</span>
+            <span class="nav-label">11ª DIVISÃO - ASSALTO</span>
+          </button>
+          <button class="nav-item sub-div" data-division="12">
+            <span class="div-glyph">🔬</span>
+            <span class="nav-label">12ª DIVISÃO - P&D</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom-status">
+          <div class="status-indicator-header">
+            <span class="status-header-text">STATUS ESPIRITUAL</span>
+            <span class="pulse-dot"></span>
+          </div>
+          <div class="status-body">
+            <span class="sub-status-icon">✦</span>
+            <span class="sub-status-label">ZANPAKUTŌ: DESPERTA</span>
+          </div>
+          <div class="status-subline">[SHIKAI ATIVO // SYNC 98%]</div>
+        </div>
+      </aside>
+
+      <!-- CENTER CONTENT -->
+      <main class="center-content">
+        
+        <!-- SECTOR HERO BANNER -->
+        <section class="sector-hero-card">
+          <div class="sector-bg-watermark">斬魄刀</div>
+          <div class="sector-meta-header">
+            <div class="sector-tag">SECTOR 04 // KARAKURA</div>
+            <div class="reiatsu-eq-pill">● EQUILÍBRIO REIATSU 99.4%</div>
+          </div>
+          <div class="gotei-id">ID: GOTEI-OPS-8842</div>
+
+          <div class="hero-main-title">
+            <h1>QUADRO<br>DE<br>MISSÕES <span class="title-sub">// 任務板</span></h1>
+          </div>
+
+          <p class="hero-desc">
+            Karakura Town Sector 04 — Patrulha, purificação de anomalias espirituais e execução de Konsō prioritário sob diretriz do Capitão Comandante.
+          </p>
+
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-card-head">
+                <span>HOLLOWS VENCIDOS</span>
+                <span class="stat-icon">⚔️</span>
+              </div>
+              <div class="stat-main">
+                <span class="stat-num" id="stat-hollows-vencidos">14</span>
+                <span class="stat-unit">HOLLOWS</span>
+              </div>
+              <div class="stat-footer">
+                <span>4 Gillian • 1 Adjuchas</span>
+                <span class="stat-highlight green">+12%</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-head">
+                <span>KONSŌ EFETUADOS</span>
+                <span class="stat-icon">🛡️</span>
+              </div>
+              <div class="stat-main">
+                <span class="stat-num" id="stat-konso-total">28</span>
+                <span class="stat-unit">ALMAS</span>
+              </div>
+              <div class="stat-footer">
+                <span>Rukia: 19 • Ichigo: 9</span>
+                <span class="stat-highlight">100% SUCESSO</span>
+              </div>
+            </div>
+
+            <div class="stat-card danger">
+              <div class="stat-card-head">
+                <span>AMEAÇAS ATIVAS</span>
+                <span class="stat-icon red">▲</span>
+              </div>
+              <div class="stat-main">
+                <span class="stat-num red" id="stat-ameacas-ativas">02</span>
+                <span class="stat-unit">CRÍTICAS</span>
+              </div>
+              <div class="stat-footer">
+                <span>Nível Menos Grande</span>
+                <span class="alert-pill-red">ALERTA</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REIATSU PROGRESS -->
+          <div class="reiatsu-progress-container">
+            <div class="reiatsu-bar-header">
+              <span class="bar-title">✦ NÍVEL DE REIATSU DIÁRIO <span class="bar-subtitle">[CAPACIDADE EXPANDIDA]</span></span>
+              <span class="bar-values"><span id="reiatsu-current-val">780</span> / 1000 REIATSU <span class="missions-count" id="stat-completed-summary">(7/9 MISSÕES CUMPRIDAS)</span></span>
+            </div>
+            <div class="segmented-track" id="main-reiatsu-progress">
+              <!-- JS will fill or we populate -->
+              <div class="track-fill" id="reiatsu-bar-fill" style="width: 78%;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ADD MISSION BOX -->
+        <section class="mission-input-section">
+          <div class="input-section-header">
+            <span class="sec-tag">◆ CORTE DE KATANA // LIBERAÇÃO DE BANKAI • REGISTRO DE MISSÃO</span>
+            <span class="sec-right">DIVISÃO CENTRAL • SEIREITEI PROTOCOL</span>
+          </div>
+
+          <form id="new-mission-form" class="mission-form">
+            <div class="form-main-bar">
+              <span class="katana-cross-icon">⚔️</span>
+              <input 
+                type="text" 
+                id="task-title-input" 
+                placeholder="Liberar Bankai... Digite uma nova missão ou purificação espiritual (Ex: Patrulhar Ruínas do Hueco Mundo)..." 
+                required 
+                autocomplete="off"
+              />
+              <button type="submit" class="btn-bankai-add">
+                <span>⚔️ 断 ADICIONAR MISSÃO</span>
+              </button>
+            </div>
+
+            <div class="form-selectors-row">
+              <div class="selector-group">
+                <span class="sel-label">SETOR:</span>
+                <div class="tag-chips" id="sector-chips">
+                  <button type="button" class="tag-chip active" data-sector="mundo-dos-vivos"># MUNDO DOS VIVOS</button>
+                  <button type="button" class="tag-chip" data-sector="purificacao"># PURIFICAÇÃO</button>
+                  <button type="button" class="tag-chip" data-sector="nivel-capitao"># NÍVEL CAPITÃO</button>
+                  <button type="button" class="tag-chip" data-sector="pesquisa-mayuri"># PESQUISA MAYURI</button>
+                </div>
+              </div>
+
+              <div class="selector-group">
+                <span class="sel-label">REIATSU:</span>
+                <div class="tag-chips" id="reiatsu-chips">
+                  <button type="button" class="tag-chip" data-reward="100">COMUM [+100]</button>
+                  <button type="button" class="tag-chip active" data-reward="250">TENENTE [+250]</button>
+                  <button type="button" class="tag-chip highlight-orange" data-reward="500">CAPITÃO [+500 卍解]</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- MISSION GROUPS -->
+        <div class="mission-sections-wrapper">
+
+          <!-- SECTION 1: NIVEL CAPITAO // PRIORIDADE CRITICA -->
+          <section class="mission-group" id="group-capitao">
+            <div class="group-header">
+              <div class="group-title-col">
+                <span class="diamond-crimson">◆</span>
+                <h2 class="group-title">NÍVEL CAPITÃO <span class="group-title-sub">// PRIORIDADE CRÍTICA</span></h2>
+              </div>
+              <div class="group-badge-badge">
+                <span class="badge-count-red" id="count-criticas">02 ATIVAS</span>
+                <span class="badge-authoriz">AUTORIZAÇÃO GOTEI-13</span>
+              </div>
+            </div>
+
+            <div class="missions-list" id="list-capitao">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- SECTION 2: EM ANDAMENTO // PURIFICACAO DE HOLLOWS -->
+          <section class="mission-group" id="group-andamento">
+            <div class="group-header">
+              <div class="group-title-col">
+                <span class="diamond-orange">◆</span>
+                <h2 class="group-title">EM ANDAMENTO <span class="group-title-sub">// PURIFICAÇÃO DE HOLLOWS</span></h2>
+              </div>
+              <div class="group-badge-badge">
+                <span class="badge-count-orange" id="count-andamento">02 MISSÕES</span>
+                <span class="badge-authoriz">EXECUÇÃO IMEDIATA</span>
+              </div>
+            </div>
+
+            <div class="missions-list" id="list-andamento">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- SECTION 3: ALMAS SALVAS // CONCLUIDAS NO DIA -->
+          <section class="mission-group" id="group-concluidas">
+            <div class="group-header">
+              <div class="group-title-col">
+                <span class="diamond-cyan">◆</span>
+                <h2 class="group-title">ALMAS SALVAS <span class="group-title-sub">// CONCLUÍDAS NO DIA</span></h2>
+              </div>
+              <div class="group-badge-badge">
+                <span class="badge-count-dark" id="count-concluidas">01 CONFIRMADA</span>
+                <span class="badge-authoriz">SOUL SOCIETY ARCHIVE</span>
+              </div>
+            </div>
+
+            <div class="missions-list" id="list-concluidas">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+        </div>
+      </main>
+
+      <!-- RIGHT SIDEBAR (WIDGETS) -->
+      <aside class="right-panel">
+        
+        <!-- WIDGET 1: MODO ZANPAKUTO / POMODORO -->
+        <div class="widget-card pomodoro-card">
+          <div class="widget-header">
+            <div class="widget-title">
+              <span class="widget-icon">⏳</span>
+              <span>MODO ZANPAKUTŌ</span>
+            </div>
+            <span class="widget-sub-badge">POMODORO ESPIRITUAL</span>
+          </div>
+
+          <div class="timer-display-frame">
+            <div class="timer-crosshair-tl">+</div>
+            <div class="timer-crosshair-tr">+</div>
+            <div class="timer-crosshair-bl">+</div>
+            <div class="timer-crosshair-br">+</div>
+            
+            <div class="timer-digits" id="timer-display">25:00</div>
+            
+            <div class="timer-state-row">
+              <span class="pulse-cyan">●</span>
+              <span class="timer-state-text" id="timer-status-text">FOCO ESPIRITUAL ATIVO // MEDITANDO NA LÂMINA</span>
+            </div>
+
+            <div class="cycle-indicator">
+              <div class="cycle-tick active"></div>
+              <div class="cycle-tick active"></div>
+              <div class="cycle-tick"></div>
+              <div class="cycle-tick"></div>
+              <span class="cycle-label">CICLO 2/4</span>
+            </div>
+          </div>
+
+          <div class="timer-controls">
+            <button class="btn-timer active-action" id="btn-timer-start">▶ INICIAR</button>
+            <button class="btn-timer" id="btn-timer-pause">❚❚ PAUSA</button>
+            <button class="btn-timer" id="btn-timer-reset">↺ RESET</button>
+          </div>
+        </div>
+
+        <!-- WIDGET 2: HOLLOWS PURIFICADOS -->
+        <div class="widget-card hollow-counter-card">
+          <div class="widget-header">
+            <div class="widget-title">
+              <span class="widget-icon red">🛡️</span>
+              <span>HOLLOWS PURIFICADOS</span>
+            </div>
+            <span class="widget-sub-badge">HOJE</span>
+          </div>
+
+          <div class="hollow-stat-row">
+            <div class="hollow-count-block">
+              <span class="hollow-big-num" id="widget-hollows-count">14</span>
+              <span class="hollow-num-sub">TOTAL PURIFICADO</span>
+            </div>
+            <div class="hollow-mask-emblem">
+              <div class="mask-diamond">
+                <span class="mask-icon">👹</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hollow-breakdown-list">
+            <div class="breakdown-item">
+              <span class="breakdown-bullet">◆</span>
+              <span class="breakdown-name">HOLLOWS COMUNS</span>
+              <span class="breakdown-val" id="count-hollows-comuns">09</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-bullet">◆</span>
+              <span class="breakdown-name">MENOS GILLIAN</span>
+              <span class="breakdown-val" id="count-hollows-gillian">04</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-bullet">◆</span>
+              <span class="breakdown-name">ADJUCHAS ANÔMALO</span>
+              <span class="breakdown-val" id="count-hollows-adjuchas">01</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 3: TRANSMISSAO SOUL SOCIETY -->
+        <div class="widget-card broadcast-card">
+          <div class="widget-header">
+            <div class="widget-title">
+              <span class="widget-icon cyan">📡</span>
+              <span>TRANSMISSÃO SOUL SOCIETY</span>
+            </div>
+            <span class="channel-open-pill">● CANAL ABERTO</span>
+          </div>
+
+          <div class="broadcast-feed">
+            <article class="feed-item">
+              <div class="feed-head">
+                <span class="feed-author">12ª DIVISÃO • LABORATÓRIO</span>
+                <span class="feed-time">02m atrás</span>
+              </div>
+              <p class="feed-msg">Senkaimon estabilizado no setor oeste de Karakura. Passagem livre para patrulhas registradas.</p>
+            </article>
+
+            <article class="feed-item">
+              <div class="feed-head">
+                <span class="feed-author">COMANDO GERAL • GOTEI 13</span>
+                <span class="feed-time">18m atrás</span>
+              </div>
+              <p class="feed-msg">Convocação de emergência para Tenentes às 15:00h no Salão da 1ª Divisão. Pauta: Incursão Hollow.</p>
+            </article>
+
+            <article class="feed-item">
+              <div class="feed-head">
+                <span class="feed-author">4ª DIVISÃO • POSTO MÉDICO</span>
+                <span class="feed-time">45m atrás</span>
+              </div>
+              <p class="feed-msg">Unidades de Kaidō de prontidão para recepção de feridos da frente Karakura Sul.</p>
+            </article>
+          </div>
+        </div>
+
+        <!-- WIDGET 4: DOUTRINA DE COMBATE -->
+        <div class="doctrine-card">
+          <div class="doctrine-box">
+            <div class="doctrine-notch">✦</div>
+            <div class="doctrine-body">
+              <div class="doctrine-title">DOUTRINA DE COMBATE</div>
+              <p class="doctrine-quote">“Aquele que não teme sua própria lâmina não é digno de empunhá-la.”</p>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
     </div>
-
-    <ul id="todo-list" class="todo-list"></ul>
-
-    <footer class="app-footer">
-      <span id="counter">0 tarefas restantes</span>
-      <button id="clear-completed" class="clear-btn">Limpar concluídas</button>
-    </footer>
   </div>
 
   <script src="script.js"></script>
