@@ -1498,3 +1498,271 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   AUTHENTICATION GATE & LOGOUT (SEIREITEI ACCESS CONTROL)
+   ========================================================================== */
+
+/* Botão de Logout no Header */
+.btn-logout {
+  background: rgba(230, 25, 55, 0.08);
+  border: 1px solid rgba(230, 25, 55, 0.3);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 120ms ease;
+  margin-left: 4px;
+}
+
+.btn-logout:hover {
+  background: var(--reiatsu-crimson);
+  color: #ffffff;
+  border-color: var(--reiatsu-crimson);
+  box-shadow: 0 0 12px rgba(230, 25, 55, 0.4);
+}
+
+.btn-logout .logout-icon {
+  font-size: 11px;
+}
+
+/* Auth Gate Container */
+.auth-gate-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 60px 20px;
+  min-height: calc(100vh - 70px);
+  background: radial-gradient(circle at center, rgba(255, 85, 0, 0.03) 0%, rgba(9, 9, 11, 0.95) 70%);
+}
+
+.auth-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  max-width: 460px;
+  width: 100%;
+  padding: 36px 32px;
+  position: relative;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-card-notch {
+  position: absolute;
+  top: -10px;
+  right: 24px;
+  background: var(--surface-card);
+  border: 1px solid var(--reiatsu-orange);
+  color: var(--reiatsu-orange);
+  font-size: 10px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-header {
+  margin-bottom: 22px;
+}
+
+.auth-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--reiatsu-orange);
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.auth-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-white);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.auth-title .kanji-sub {
+  font-size: 14px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.auth-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+/* Alerta de erro da autenticação */
+.auth-alert {
+  background: rgba(230, 25, 55, 0.12);
+  border: 1px solid var(--reiatsu-crimson);
+  color: #ff94a2;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  line-height: 1.4;
+  animation: authAlertFadeIn 150ms ease;
+}
+
+@keyframes authAlertFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.auth-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-void);
+  border: 1px solid var(--border-hairline);
+  padding: 0 12px;
+  gap: 10px;
+  transition: border-color 150ms ease;
+}
+
+.auth-input-wrapper:focus-within {
+  border-color: var(--reiatsu-orange);
+  box-shadow: 0 0 12px rgba(255, 85, 0, 0.2);
+}
+
+.auth-input-icon {
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.auth-input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 12px 0;
+  color: var(--text-white);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.auth-input-wrapper input::placeholder {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Botão de Envio de Login/Cadastro */
+.btn-auth-submit {
+  background: var(--reiatsu-orange);
+  color: var(--bg-void);
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 14px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  transition: all 120ms ease;
+  margin-top: 6px;
+}
+
+.btn-auth-submit:hover:not(:disabled) {
+  background: var(--text-white);
+  color: var(--bg-void);
+  box-shadow: 0 0 18px rgba(255, 85, 0, 0.45);
+}
+
+.btn-auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-auth-submit .btn-arrow {
+  font-size: 14px;
+  transition: transform 120ms ease;
+}
+
+.btn-auth-submit:hover:not(:disabled) .btn-arrow {
+  transform: translateX(3px);
+}
+
+/* Alternador Login / Cadastro */
+.auth-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.auth-toggle-text {
+  color: var(--text-muted);
+}
+
+.btn-auth-toggle {
+  background: none;
+  border: none;
+  color: var(--reiatsu-cyan);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 120ms ease;
+}
+
+.btn-auth-toggle:hover {
+  color: var(--text-white);
+}
+
+.auth-footer-status {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-hairline);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+

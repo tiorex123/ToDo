@@ -52,18 +52,71 @@
         <input type="text" id="mission-search" placeholder="Buscar missão, hojo..." autocomplete="off">
       </div>
 
-      <div class="officer-profile">
+      <div class="officer-profile" id="officer-profile">
         <div class="officer-info">
-          <span class="officer-name">Kurosaki Ichigo</span>
-          <span class="officer-rank">CAPITÃO SUBSTITUTO // DIVISÃO 0</span>
+          <span class="officer-name" id="user-display-name">Não autenticado</span>
+          <span class="officer-rank" id="user-display-rank">ACESSO RESTRITO</span>
         </div>
         <div class="officer-avatar">
-          <div class="avatar-box">15</div>
+          <div class="avatar-box" id="user-avatar-box">--</div>
         </div>
+        <button type="button" class="btn-logout" id="btn-logout" style="display: none;" title="Encerrar Sessão">
+          <span>SAIR</span>
+          <span class="logout-icon">⏻</span>
+        </button>
       </div>
     </header>
 
-    <div class="main-body-container">
+    <!-- SEÇÃO DE AUTENTICAÇÃO (LOGIN / CADASTRO) -->
+    <section class="auth-gate-container" id="auth-gate">
+      <div class="auth-card">
+        <div class="auth-card-notch">✦</div>
+        
+        <div class="auth-header">
+          <div class="auth-badge">SEIREITEI OPS // GOTEI 13</div>
+          <h2 class="auth-title" id="auth-title">PORTAL DE ACESSO <span class="kanji-sub">// 穿界門</span></h2>
+          <p class="auth-subtitle" id="auth-subtitle">Autenticação de Oficial Espiritual para liberação do Quadro Tático de Missões</p>
+        </div>
+
+        <!-- Alerta de erro com mensagens amigáveis -->
+        <div class="auth-alert" id="auth-error-msg" style="display: none;"></div>
+
+        <form class="auth-form" id="auth-form" novalidate>
+          <div class="auth-field-group">
+            <label for="auth-email" class="auth-label">E-MAIL DO OFICIAL</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">✉</span>
+              <input type="email" id="auth-email" placeholder="oficial@seireitei.soul" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-field-group">
+            <label for="auth-password" class="auth-label">CHAVE ESPIRITUAL (SENHA)</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">🔑</span>
+              <input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" required autocomplete="current-password" minlength="6">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-auth-submit" id="btn-auth-submit">
+            <span id="btn-auth-text">LIBERAR ACESSO (LOGIN)</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </form>
+
+        <div class="auth-toggle-row">
+          <span class="auth-toggle-text" id="auth-toggle-prompt">Não possui registro espiritual?</span>
+          <button type="button" class="btn-auth-toggle" id="btn-auth-toggle">Criar nova conta</button>
+        </div>
+
+        <div class="auth-footer-status">
+          <span class="pulse-dot"></span>
+          <span>SENKAIMON VIGILANTE // PROTOCOLO DE SEGURANÇA SEIREITEI-SEC-46</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-body-container" id="protected-content" style="display: none;">
       
       <!-- LEFT SIDEBAR -->
       <aside class="sidebar">
