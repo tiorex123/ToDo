@@ -1766,3 +1766,68 @@ body {
   letter-spacing: 0.06em;
 }
 
+/* Divisor de Métodos de Login */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 18px 0;
+  text-align: center;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.auth-divider span {
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+/* Botão Entrar com o Google */
+.btn-google-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-muted);
+  color: var(--text-white);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 120ms ease;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+}
+
+.btn-google-auth:hover:not(:disabled) {
+  background: var(--surface-bright);
+  border-color: var(--text-white);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.12);
+}
+
+.btn-google-auth:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.btn-google-auth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+

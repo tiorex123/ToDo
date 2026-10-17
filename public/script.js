@@ -5,13 +5,17 @@
 
 // Configuração do Firebase (conectado ao projeto 'todo-1c7ba')
 const firebaseConfig = {
-  apiKey: "AIzaSy_SUA_CHAVE_AQUI", // Insira a API Key do console Firebase se necessário
+  apiKey: "AIzaSyCSEBJArGSuLl8KqCTtz2DIdY8D4ZrBP_Y", // API Key do console Firebase
   authDomain: "todo-1c7ba.firebaseapp.com",
   projectId: "todo-1c7ba",
   storageBucket: "todo-1c7ba.firebasestorage.app",
   messagingSenderId: "todo-1c7ba",
   appId: "todo-1c7ba"
 };
+
+// Nome da coleção no Firestore compatível com a regra de segurança:
+// match /usuarios/{userId} { allow read, write: if request.auth != null && request.auth.uid == userId; }
+const USERS_COLLECTION = "usuarios";
 
 // Referências aos serviços do Firebase
 let db = null;
@@ -20,12 +24,12 @@ let currentUser = null;
 let isSignUpMode = false;
 
 // Funções modulares do Cloud Firestore
-let collection, doc, setDoc, getDocs, addDoc, updateDoc, deleteDoc;
+let getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot;
 
 // Funções modulares do Firebase Authentication
-let getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged;
+let getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup;
 
-// Sementes iniciais de missões (atribuídas ao usuário no primeiro login caso sua coleção esteja vazia)
+// Sementes iniciais de missões (atribuídas ao usuário no primeiro login caso seu documento esteja vazio)
 const INITIAL_MISSIONS = [
   {
     id: "TSK-001",
@@ -116,6 +120,8 @@ const authPasswordInput = document.getElementById('auth-password');
 const authErrorMsg = document.getElementById('auth-error-msg');
 const btnAuthSubmit = document.getElementById('btn-auth-submit');
 const btnAuthText = document.getElementById('btn-auth-text');
+const btnGoogleAuth = document.getElementById('btn-google-auth');
+const btnGoogleText = document.getElementById('btn-google-text');
 const authTitle = document.getElementById('auth-title');
 const authSubtitle = document.getElementById('auth-subtitle');
 const authTogglePrompt = document.getElementById('auth-toggle-prompt');
@@ -169,13 +175,16 @@ async function initFirebaseServices() {
     const authModule = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js");
 
     // Funções do Firestore
+    getFirestore = firestoreModule.getFirestore;
     collection = firestoreModule.collection;
     doc = firestoreModule.doc;
     setDoc = firestoreModule.setDoc;
+    getDoc = firestoreModule.getDoc;
     getDocs = firestoreModule.getDocs;
     addDoc = firestoreModule.addDoc;
     updateDoc = firestoreModule.updateDoc;
     deleteDoc = firestoreModule.deleteDoc;
+    onSnapshot = firestoreModule.onSnapshot;
 
     // Funções do Firebase Auth
     getAuth = authModule.getAuth;
@@ -183,23 +192,28 @@ async function initFirebaseServices() {
     createUserWithEmailAndPassword = authModule.createUserWithEmailAndPassword;
     signOut = authModule.signOut;
     onAuthStateChanged = authModule.onAuthStateChanged;
+    GoogleAuthProvider = authModule.GoogleAuthProvider;
+    signInWithPopup = authModule.signInWithPopup;
 
     const app = initializeApp(firebaseConfig);
-    db = firestoreModule.getFirestore(app);
+    db = getFirestore(app);
     auth = getAuth(app);
 
-    console.log("[SEIREITEI OPS] Firebase Auth e Cloud Firestore inicializados.");
+    console.log("[SEIREITEI OPS] Firebase Auth e Cloud Firestore inicializados com sucesso.");
 
-    // Monitoramento reativo do estado de autenticação
+    // Monitoramento reativo do estado de autenticação via onAuthStateChanged
+    // Garante que busca e gravação ocorram SOMENTE após a confirmação do usuário
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       updateAuthUI(user);
 
-      if (user) {
-        console.log("[SEIREITEI AUTH] Oficial conectado:", user.email, "UID:", user.uid);
+      if (user && user.uid) {
+        console.log(`[SEIREITEI AUTH] Oficial confirmado no onAuthStateChanged: ${user.email} (UID: ${user.uid})`);
+        // Dispara a leitura do documento /usuarios/{userId} somente após autenticação confirmada
         await loadMissionsFromFirestore();
       } else {
-        console.log("[SEIREITEI AUTH] Nenhum oficial conectado. Acesso restrito.");
+        console.log("[SEIREITEI AUTH] Nenhum oficial autenticado no onAuthStateChanged. Acesso bloqueado.");
+        currentUser = null;
         missions = [];
         renderMissions();
       }
@@ -227,10 +241,13 @@ function updateAuthUI(user) {
     if (protectedContent) protectedContent.style.display = 'grid';
     if (btnLogout) btnLogout.style.display = 'inline-flex';
 
-    const emailName = user.email ? user.email.split('@')[0] : 'OFICIAL';
-    if (userDisplayName) userDisplayName.textContent = emailName.toUpperCase();
-    if (userDisplayRank) userDisplayRank.textContent = `UID: ${user.uid.slice(0, 8)}... // AUTORIZADO`;
-    if (userAvatarBox) userAvatarBox.textContent = emailName.slice(0, 2).toUpperCase();
+    const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'OFICIAL');
+    const isGoogle = user.providerData && user.providerData.some(p => p.providerId === 'google.com');
+    const providerTag = isGoogle ? 'GOOGLE // AUTORIZADO' : 'AUTORIZADO';
+
+    if (userDisplayName) userDisplayName.textContent = displayName.toUpperCase();
+    if (userDisplayRank) userDisplayRank.textContent = `UID: ${user.uid.slice(0, 8)}... // ${providerTag}`;
+    if (userAvatarBox) userAvatarBox.textContent = displayName.slice(0, 2).toUpperCase();
   } else {
     // Oficial deslogado: oculta o painel protegido e exibe o formulário de login
     if (authGate) authGate.style.display = 'flex';
@@ -385,62 +402,145 @@ function setAuthButtonLoading(loading) {
   }
 }
 
-// ==========================================================================
-// CAMADA DE DADOS FIRESTORE: ISOLADA POR USUÁRIO (auth.currentUser.uid)
-// ==========================================================================
-
 /**
- * Obtém a referência da subcoleção de missões do usuário atual:
- * Estrutura: /users/{currentUser.uid}/missions
+ * Autenticação via popup do Google utilizando GoogleAuthProvider e signInWithPopup.
  */
-function getUserMissionsCollection() {
-  if (!currentUser) throw new Error("Ação não permitida: Nenhum oficial autenticado.");
-  return collection(db, "users", currentUser.uid, "missions");
+async function handleGoogleSignIn() {
+  hideAuthError();
+  setGoogleButtonLoading(true);
+
+  try {
+    if (!auth) await initFirebaseServices();
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    console.log("[SEIREITEI AUTH] Abrindo popup de autenticação com o Google...");
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    console.log(`[SEIREITEI AUTH] Login com Google efetuado com sucesso: ${user.email} (UID: ${user.uid})`);
+
+    // Sincroniza estado e dispara busca/gravação na pasta /usuarios/{userId}
+    currentUser = user;
+    updateAuthUI(user);
+    await loadMissionsFromFirestore();
+  } catch (error) {
+    console.error("[SEIREITEI AUTH] Erro ao autenticar com o Google:", error);
+    handleGoogleAuthError(error);
+  } finally {
+    setGoogleButtonLoading(false);
+  }
 }
 
 /**
- * Obtém a referência de um documento de missão específico do usuário atual:
- * Estrutura: /users/{currentUser.uid}/missions/{missionId}
+ * Tratamento de erros e cancelamentos do popup do Google.
  */
-function getUserMissionDoc(missionId) {
-  if (!currentUser) throw new Error("Ação não permitida: Nenhum oficial autenticado.");
-  return doc(db, "users", currentUser.uid, "missions", missionId);
+function handleGoogleAuthError(error) {
+  if (!error) return;
+  const code = error.code || "";
+
+  switch (code) {
+    case "auth/popup-closed-by-user":
+      showAuthError("A janela do Google foi fechada antes de concluir a autorização. O acesso não foi liberado.");
+      break;
+    case "auth/cancelled-popup-request":
+      showAuthError("A solicitação de login com o Google foi cancelada.");
+      break;
+    case "auth/popup-blocked":
+      showAuthError("O popup do Google foi bloqueado pelo seu navegador. Habilite popups para este site e tente novamente.");
+      break;
+    case "auth/account-exists-with-different-credential":
+      showAuthError("Já existe uma conta registrada com este e-mail através de outro método. Entre utilizando suas credenciais anteriores.");
+      break;
+    case "auth/network-request-failed":
+      showAuthError("Falha de conexão com os servidores do Google. Verifique seu sinal de internet.");
+      break;
+    case "auth/operation-not-allowed":
+      showAuthError("O provedor Google precisa ser ativado no Firebase Console (Authentication > Sign-in method).");
+      break;
+    default:
+      showAuthError(error.message || "Não foi possível concluir o login com o Google. Tente novamente.");
+      break;
+  }
+}
+
+function setGoogleButtonLoading(loading) {
+  if (!btnGoogleAuth) return;
+  btnGoogleAuth.disabled = loading;
+  if (btnGoogleText) {
+    btnGoogleText.textContent = loading ? "CONECTANDO AO GOOGLE..." : "ENTRAR COM O GOOGLE";
+  }
+}
+
+// Event listener para o botão de Login com o Google
+if (btnGoogleAuth) {
+  btnGoogleAuth.addEventListener('click', handleGoogleSignIn);
+}
+
+// ==========================================================================
+// CAMADA DE DADOS FIRESTORE: COMPATÍVEL COM match /usuarios/{userId}
+// ==========================================================================
+
+/**
+ * Retorna a referência do documento do usuário: /usuarios/{userId}
+ * Utiliza o ID do usuário autenticado (auth.currentUser.uid).
+ */
+function getUserDocRef(userId) {
+  const targetUid = userId || (currentUser ? currentUser.uid : null);
+  if (!targetUid) {
+    throw new Error("Ação não permitida: Nenhum oficial autenticado no sistema.");
+  }
+  return doc(db, USERS_COLLECTION, targetUid);
 }
 
 /**
- * Carrega as missões pertencentes exclusivamente ao oficial autenticado.
- * Se a coleção estiver vazia (primeiro acesso), semeia as missões padrão associadas ao UID.
+ * Lê diretamente o documento correspondente ao userId do usuário logado: doc(db, "usuarios", userId)
+ * Utiliza: doc, getDoc
+ * Executada SOMENTE após a confirmação de que o usuário está autenticado no onAuthStateChanged.
  */
 async function loadMissionsFromFirestore() {
-  if (!currentUser) return;
+  if (!currentUser || !currentUser.uid) {
+    console.warn("[SEIREITEI OPS] Leitura cancelada: Usuário não autenticado no momento.");
+    return;
+  }
 
   setLoadingState(true);
   try {
     if (!db) await initFirebaseServices();
-    const missionsCol = getUserMissionsCollection();
-    const snapshot = await getDocs(missionsCol);
 
-    if (snapshot.empty) {
-      console.log(`[SEIREITEI OPS] Nenhuma missão encontrada para o usuário ${currentUser.uid}. Populando dados iniciais...`);
-      // Semeia com vínculo explícito ao UID do usuário
+    const userDocRef = getUserDocRef(currentUser.uid);
+    console.log(`[SEIREITEI OPS] Consultando documento /${USERS_COLLECTION}/${currentUser.uid}...`);
+
+    const docSnap = await getDoc(userDocRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      missions = Array.isArray(data.missions) ? data.missions : [];
+      console.log(`[SEIREITEI OPS] Documento /${USERS_COLLECTION}/${currentUser.uid} carregado com sucesso (${missions.length} missões).`);
+    } else {
+      console.log(`[SEIREITEI OPS] Documento /${USERS_COLLECTION}/${currentUser.uid} ainda não existe. Criando novo registro...`);
+      // Inicializa com as missões padrão associadas ao UID
       missions = INITIAL_MISSIONS.map(m => ({
         ...m,
         userId: currentUser.uid,
         createdAt: new Date().toISOString()
       }));
 
-      for (const m of missions) {
-        await setDoc(getUserMissionDoc(m.id), m);
-      }
-    } else {
-      missions = [];
-      snapshot.forEach(docSnap => {
-        missions.push({ id: docSnap.id, ...docSnap.data() });
+      // Criação inicial do documento com setDoc
+      await setDoc(userDocRef, {
+        userId: currentUser.uid,
+        email: currentUser.email || '',
+        missions: missions,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
+      console.log(`[SEIREITEI OPS] Documento /${USERS_COLLECTION}/${currentUser.uid} inicializado via setDoc.`);
     }
+
     updateConnectionStatus("FIRESTORE CONECTADO");
   } catch (error) {
-    console.error("[SEIREITEI OPS] Erro ao carregar missões do usuário:", error);
+    handleFirestoreError(error, "ao carregar missões do usuário");
     updateConnectionStatus("CONTINGÊNCIA ATIVA");
     if (!missions || missions.length === 0) {
       missions = INITIAL_MISSIONS.map(m => ({ ...m, userId: currentUser.uid }));
@@ -452,45 +552,75 @@ async function loadMissionsFromFirestore() {
 }
 
 /**
- * Salva uma nova missão vinculada ao UID do oficial autenticado.
- * Utiliza: doc, setDoc.
+ * Salva ou atualiza a lista de missões no documento /usuarios/{userId}.
+ * Utiliza: doc(db, "usuarios", userId) e setDoc com merge: true
+ * Garante que a gravação só ocorra se o usuário estiver autenticado.
  */
-async function saveMissionToFirestore(newMission) {
+async function saveUserMissionsToFirestore(updatedMissions) {
+  if (!currentUser || !currentUser.uid) {
+    throw new Error("Ação não permitida: Oficial não autenticado.");
+  }
   if (!db) await initFirebaseServices();
-  const missionRef = getUserMissionDoc(newMission.id);
-  await setDoc(missionRef, newMission);
+
+  const userDocRef = getUserDocRef(currentUser.uid);
+
+  await setDoc(userDocRef, {
+    userId: currentUser.uid,
+    email: currentUser.email || '',
+    missions: updatedMissions,
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
+
+  console.log(`[SEIREITEI OPS] Dados salvos em /${USERS_COLLECTION}/${currentUser.uid} via setDoc.`);
 }
 
 /**
- * Alternativa para adicionar documento com ID autogerado vinculado ao usuário.
- * Utiliza: collection, addDoc.
+ * Opcional: Escuta em tempo real as alterações no documento /usuarios/{userId} via onSnapshot.
  */
-async function addMissionWithAutoId(missionData) {
-  if (!db) await initFirebaseServices();
-  const colRef = getUserMissionsCollection();
-  const dataWithUid = { ...missionData, userId: currentUser.uid };
-  const docRef = await addDoc(colRef, dataWithUid);
-  return docRef.id;
+function subscribeToUserDoc(userId, callback) {
+  if (!db) return null;
+  const targetUid = userId || (currentUser ? currentUser.uid : null);
+  if (!targetUid) return null;
+
+  const userDocRef = getUserDocRef(targetUid);
+  return onSnapshot(userDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (typeof callback === 'function') callback(data);
+    }
+  }, (err) => {
+    handleFirestoreError(err, "na escuta em tempo real (onSnapshot)");
+  });
 }
 
 /**
- * Atualiza campos específicos da missão do usuário atual.
- * Utiliza: doc, updateDoc.
+ * Tratamento centralizado de erros do Cloud Firestore com mensagem amigável para 'permission-denied'.
  */
-async function updateMissionInFirestore(missionId, updates) {
-  if (!db) await initFirebaseServices();
-  const missionRef = getUserMissionDoc(missionId);
-  await updateDoc(missionRef, updates);
-}
+function handleFirestoreError(error, actionContext = "na operação") {
+  console.error(`[SEIREITEI OPS] Falha ${actionContext}:`, error);
 
-/**
- * Deleta uma missão específica pertencente ao usuário atual.
- * Utiliza: doc, deleteDoc.
- */
-async function deleteMissionFromFirestore(missionId) {
-  if (!db) await initFirebaseServices();
-  const missionRef = getUserMissionDoc(missionId);
-  await deleteDoc(missionRef);
+  const errorCode = error ? (error.code || '') : '';
+  const errorMessage = error ? (error.message || '') : '';
+
+  if (errorCode === 'permission-denied' || errorMessage.includes('permission-denied') || errorMessage.includes('insufficient permissions')) {
+    const deniedMsg = `▲ [ACESSO NEGADO // PERMISSION-DENIED]:
+Você não possui permissão para ler ou gravar em /${USERS_COLLECTION}/${currentUser ? currentUser.uid : '{userId}'}.
+Certifique-se de que a regra do Firestore está ativa no console do Firebase:
+match /usuarios/{userId} {
+  allow read, write: if request.auth != null && request.auth.uid == userId;
+}`;
+    console.error(deniedMsg);
+    alert(deniedMsg);
+    updateConnectionStatus("PERMISSÃO NEGADA");
+    return;
+  }
+
+  if (errorCode === 'unavailable') {
+    alert("▲ [FIRESTORE INDISPONÍVEL]: O banco de dados está inacessível no momento. Verifique sua conexão à internet.");
+    return;
+  }
+
+  alert(`▲ [ERRO NO BANCO]: Ocorreu uma falha ${actionContext}. Os dados foram mantidos localmente na tela.`);
 }
 
 // ==========================================================================
@@ -636,8 +766,13 @@ function createMissionCard(mission) {
   return card;
 }
 
-// Toggle Completed / In Progress (Async / Firestore)
+// Toggle Completed / In Progress (Async / Firestore no documento /usuarios/{userId})
 async function toggleMissionCompletion(id, triggerBtn) {
+  if (!currentUser || !currentUser.uid) {
+    alert("Acesso restrito: Oficial não autenticado.");
+    return;
+  }
+
   const mission = missions.find(m => m.id === id);
   if (!mission) return;
 
@@ -655,24 +790,25 @@ async function toggleMissionCompletion(id, triggerBtn) {
   if (triggerBtn) triggerBtn.disabled = true;
 
   try {
-    await updateMissionInFirestore(id, {
-      completed: willComplete,
-      category: newCategory
-    });
+    await saveUserMissionsToFirestore(missions);
   } catch (error) {
-    console.error(`[SEIREITEI OPS] Falha ao atualizar missão ${id} no Firestore:`, error);
+    handleFirestoreError(error, `ao atualizar status da missão #${id}`);
     // Reverte em caso de falha de rede/permissão
     mission.completed = prevCompleted;
     mission.category = prevCategory;
     renderMissions();
-    alert("Falha ao sincronizar alteração com o Cloud Firestore. O estado anterior foi restaurado.");
   } finally {
     if (triggerBtn) triggerBtn.disabled = false;
   }
 }
 
-// Delete Mission (Async / Firestore)
+// Delete Mission (Async / Firestore no documento /usuarios/{userId})
 async function deleteMission(id, triggerBtn) {
+  if (!currentUser || !currentUser.uid) {
+    alert("Acesso restrito: Oficial não autenticado.");
+    return;
+  }
+
   const confirmExorcism = confirm(`Deseja realmente exorcizar e remover a missão #${id}?`);
   if (!confirmExorcism) return;
 
@@ -683,20 +819,24 @@ async function deleteMission(id, triggerBtn) {
   if (triggerBtn) triggerBtn.disabled = true;
 
   try {
-    await deleteMissionFromFirestore(id);
+    await saveUserMissionsToFirestore(missions);
   } catch (error) {
-    console.error(`[SEIREITEI OPS] Falha ao deletar missão ${id} no Firestore:`, error);
+    handleFirestoreError(error, `ao deletar a missão #${id}`);
     // Restaura lista local em caso de erro
     missions = previousMissions;
     renderMissions();
-    alert("Falha ao remover a missão no Cloud Firestore. Ela foi restaurada na interface.");
   } finally {
     if (triggerBtn) triggerBtn.disabled = false;
   }
 }
 
-// Edit Mission prompt (Async / Firestore)
+// Edit Mission prompt (Async / Firestore no documento /usuarios/{userId})
 async function editMissionPrompt(id, triggerBtn) {
+  if (!currentUser || !currentUser.uid) {
+    alert("Acesso restrito: Oficial não autenticado.");
+    return;
+  }
+
   const mission = missions.find(m => m.id === id);
   if (!mission) return;
 
@@ -710,27 +850,25 @@ async function editMissionPrompt(id, triggerBtn) {
   if (triggerBtn) triggerBtn.disabled = true;
 
   try {
-    await updateMissionInFirestore(id, {
-      title: mission.title
-    });
+    await saveUserMissionsToFirestore(missions);
   } catch (error) {
-    console.error(`[SEIREITEI OPS] Falha ao atualizar título da missão ${id} no Firestore:`, error);
+    handleFirestoreError(error, `ao editar o título da missão #${id}`);
     mission.title = prevTitle;
     renderMissions();
-    alert("Falha ao salvar edição no Cloud Firestore. O título anterior foi restaurado.");
   } finally {
     if (triggerBtn) triggerBtn.disabled = false;
   }
 }
 
-// Add New Mission (Async / Firestore vinculado ao usuário)
+// Add New Mission (Async / Firestore no documento /usuarios/{userId})
 if (missionForm) {
   missionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const title = taskTitleInput ? taskTitleInput.value.trim() : '';
     if (!title) return;
 
-    if (!currentUser) {
+    // Confirmação de usuário autenticado antes de salvar
+    if (!currentUser || !currentUser.uid) {
       alert("Acesso negado: Conecte-se como Oficial para despachar novas missões.");
       return;
     }
@@ -757,7 +895,7 @@ if (missionForm) {
 
     const newMission = {
       id: generateTaskId(),
-      userId: currentUser.uid, // Vinculação expressa ao UID do usuário autenticado
+      userId: currentUser.uid, // Vínculo explícito com o UID do usuário autenticado
       title: title,
       description: `Ordem emitida pela Divisão Central para o Setor Karakura. Requer prontidão de lâmina e contenção sob diretriz Soul Society.`,
       category: category,
@@ -778,16 +916,14 @@ if (missionForm) {
         submitBtn.textContent = 'TRANSMITINDO...';
       }
 
-      // Salva a nova missão no Cloud Firestore sob a coleção do usuário
-      await saveMissionToFirestore(newMission);
-
+      // Adiciona na memória local e salva no documento do usuário /usuarios/{userId}
       missions.unshift(newMission);
+      await saveUserMissionsToFirestore(missions);
+
       if (taskTitleInput) taskTitleInput.value = '';
       renderMissions();
     } catch (error) {
-      console.error("[SEIREITEI OPS] Falha ao persistir nova missão no Firestore:", error);
-      alert("Aviso: Falha ao transmitir a missão para a nuvem. A missão foi registrada temporariamente na interface.");
-      missions.unshift(newMission);
+      handleFirestoreError(error, "ao salvar nova missão");
       if (taskTitleInput) taskTitleInput.value = '';
       renderMissions();
     } finally {
