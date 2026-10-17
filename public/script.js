@@ -5,7 +5,7 @@
 
 // Configuração do Firebase (conectado ao projeto 'todo-1c7ba')
 const firebaseConfig = {
-  apiKey: "AIzaSyCSEBJArGSuLl8KqCTtz2DIdY8D4ZrBP_Y", // API Key do console Firebase
+  apiKey: "A", // API Key do console Firebase
   authDomain: "todo-1c7ba.firebaseapp.com",
   projectId: "todo-1c7ba",
   storageBucket: "todo-1c7ba.firebasestorage.app",
